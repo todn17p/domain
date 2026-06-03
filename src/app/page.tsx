@@ -3,82 +3,113 @@ import { ArrowRight, DoorOpen } from "lucide-react";
 import { EnvWarning } from "@/components/env-warning";
 import { GalleryHeader } from "@/components/gallery-shell";
 
+const features = [
+  {
+    index: "01",
+    title: "Theme Rooms",
+    headline: "작업의 결을 따라 전시실을 나눕니다.",
+    body: "영상, 이미지, AI VFX, 브랜드 디자인처럼 작업의 장르와 분위기에 맞춰 관람 동선을 만듭니다.",
+  },
+  {
+    index: "02",
+    title: "Artwork Wall",
+    headline: "작품은 좌우로 빠르게 넘겨 감상합니다.",
+    body: "카드 목록보다 전시장 벽에 가까운 구조로, 미디어가 먼저 보이고 설명은 라벨처럼 따라옵니다.",
+  },
+  {
+    index: "03",
+    title: "Guest Code",
+    headline: "공유 코드는 초대장처럼 작동합니다.",
+    body: "방문객은 로그인 없이 코드만 입력해 미술관에 들어오고, 수정 권한 없이 감상만 할 수 있습니다.",
+  },
+];
+
 export default function Home() {
   return (
     <>
       <EnvWarning />
       <GalleryHeader />
-      <main className="min-h-screen bg-[#f5f1e8]">
-        <section className="relative overflow-hidden border-b border-stone-200">
-          <div className="absolute inset-0 opacity-25">
+      <main className="museum-home">
+        <section className="landing-hero">
+          <div className="landing-hero-image" aria-hidden="true">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              className="h-full w-full object-cover"
-              src="https://images.unsplash.com/photo-1541961017774-22349e4a1262?auto=format&fit=crop&w=1800&q=80"
-              alt="고요한 미술관 전시장"
+              src="https://images.unsplash.com/photo-1541961017774-22349e4a1262?auto=format&fit=crop&w=2200&q=85"
+              alt=""
             />
           </div>
-          <div className="relative mx-auto grid min-h-[76vh] max-w-7xl items-end px-5 pb-14 pt-28 md:grid-cols-[1.1fr_0.9fr] md:gap-12">
-            <div>
-              <p className="text-sm uppercase tracking-[0.38em] text-[#8a6b2f]">
-                Private Online Museum
-              </p>
-              <h1 className="mt-5 max-w-4xl font-serif text-5xl leading-tight text-stone-950 md:text-7xl">
-                당신의 작업물을 하나의 미술관으로 전시하세요.
-              </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-700">
-                이미지와 영상 포트폴리오를 작품처럼 보여주는 온라인 갤러리.
-                테마관을 만들고, 고유 코드로 방문객을 초대하세요.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link className="gallery-button" href="/signup">
-                  회원가입 <ArrowRight size={17} />
-                </Link>
-                <Link className="gallery-button-secondary" href="/login">
-                  로그인
-                </Link>
-              </div>
+
+          <div className="landing-hero-inner">
+            <div className="landing-rail">
+              <span>Private Online Museum</span>
+              <span>Portfolio Exhibition Platform</span>
+              <span>Seoul, Digital Gallery</span>
             </div>
 
-            <form
-              action="/visit"
-              className="mt-12 border border-stone-300 bg-[#f8f4ec]/85 p-5 shadow-[0_28px_80px_rgba(38,31,20,0.16)] backdrop-blur md:mt-0"
-            >
-              <div className="flex items-center gap-3 border-b border-stone-300 pb-4">
-                <DoorOpen className="text-[#9b7a3c]" />
-                <div>
-                  <h2 className="font-serif text-2xl">미술관 입장</h2>
-                  <p className="text-sm text-stone-600">
-                    공유받은 코드를 입력하세요.
-                  </p>
+            <div className="landing-hero-grid">
+              <div className="landing-copy">
+                <p className="museum-kicker">ARTFOLIO.AI.KR</p>
+                <h1 className="landing-title">
+                  작업물을
+                  <span>하나의 미술관으로</span>
+                  전시하세요.
+                </h1>
+                <p className="landing-subtitle">
+                  이미지와 영상 포트폴리오를 단순한 파일 목록이 아니라,
+                  전시실과 작품 라벨을 갖춘 온라인 갤러리로 보여주세요.
+                </p>
+                <div className="landing-actions">
+                  <Link className="gallery-button" href="/signup">
+                    미술관 만들기 <ArrowRight size={17} />
+                  </Link>
+                  <Link className="gallery-button-secondary" href="/login">
+                    로그인
+                  </Link>
                 </div>
               </div>
-              <input
-                className="gallery-input mt-5 uppercase"
-                name="code"
-                placeholder="ART-93KD"
-                required
-              />
-              <button className="gallery-button mt-4 w-full" type="submit">
-                미술관 입장하기
-              </button>
-            </form>
+
+              <form action="/visit" className="visitor-ticket">
+                <div className="ticket-heading">
+                  <DoorOpen size={22} />
+                  <div>
+                    <p>Admission</p>
+                    <h2>미술관 코드 입장</h2>
+                  </div>
+                </div>
+                <label className="ticket-label" htmlFor="gallery-code">
+                  Gallery Code
+                </label>
+                <input
+                  id="gallery-code"
+                  className="ticket-input"
+                  name="code"
+                  placeholder="ART-93KD"
+                  required
+                />
+                <button className="ticket-button" type="submit">
+                  입장하기
+                </button>
+              </form>
+            </div>
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-5 py-12">
-          <div className="grid gap-4 md:grid-cols-3">
-            {["전시실처럼 나누는 테마관", "좌우로 빠르게 넘기는 작품 벽", "코드로 초대하는 방문객 보기"].map(
-              (title) => (
-                <div className="border-l border-[#c8a96a] bg-white/50 p-6" key={title}>
-                  <p className="font-serif text-2xl">{title}</p>
-                  <p className="mt-3 text-sm leading-6 text-stone-600">
-                    작품이 먼저 보이고 설명은 미술관 라벨처럼 차분하게 따라오는
-                    포트폴리오 경험을 제공합니다.
-                  </p>
+        <section className="landing-overview">
+          <div className="overview-heading">
+            <p className="museum-kicker">Now Building</p>
+            <h2>포트폴리오를 전시 경험으로 바꾸는 세 가지 구조</h2>
+          </div>
+          <div className="museum-feature-list">
+            {features.map((feature) => (
+              <article className="museum-feature" key={feature.index}>
+                <div>
+                  <span>{feature.index}</span>
+                  <p>{feature.title}</p>
                 </div>
-              ),
-            )}
+                <h3>{feature.headline}</h3>
+                <p>{feature.body}</p>
+              </article>
+            ))}
           </div>
         </section>
       </main>

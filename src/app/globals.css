@@ -8,7 +8,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-noto-sans-kr);
+  --font-serif: var(--font-noto-serif-kr);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -27,7 +28,7 @@ body {
     radial-gradient(circle at 80% 0%, rgba(255, 238, 190, 0.42), transparent 22rem),
     var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-noto-sans-kr), "Apple SD Gothic Neo", Arial, sans-serif;
 }
 
 button,
@@ -35,6 +36,274 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+.brand-mark {
+  font-family: var(--font-noto-serif-kr), Georgia, serif;
+  font-size: 1.04rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.museum-home {
+  background: #f5f1e8;
+}
+
+.landing-hero {
+  position: relative;
+  min-height: calc(100vh - 65px);
+  overflow: hidden;
+  border-bottom: 1px solid rgba(28, 28, 28, 0.14);
+  background: #ebe2d1;
+}
+
+.landing-hero-image {
+  position: absolute;
+  inset: 0;
+}
+
+.landing-hero-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(245, 241, 232, 0.96) 0%, rgba(245, 241, 232, 0.82) 42%, rgba(245, 241, 232, 0.38) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(70, 54, 30, 0.14));
+}
+
+.landing-hero-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.landing-hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 90rem;
+  min-height: calc(100vh - 65px);
+  margin: 0 auto;
+  padding: 1.35rem 1.25rem 3rem;
+}
+
+.landing-rail {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  border-top: 1px solid rgba(28, 28, 28, 0.28);
+  border-bottom: 1px solid rgba(28, 28, 28, 0.18);
+  padding: 0.7rem 0;
+  color: #4f4638;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.landing-rail span:nth-child(2) {
+  text-align: center;
+}
+
+.landing-rail span:nth-child(3) {
+  text-align: right;
+}
+
+.landing-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(20rem, 0.42fr);
+  align-items: end;
+  gap: 4rem;
+  min-height: calc(100vh - 150px);
+  padding-top: 4.5rem;
+}
+
+.landing-copy {
+  max-width: 64rem;
+  padding-bottom: 1.25rem;
+}
+
+.museum-kicker {
+  color: #8a6b2f;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.landing-title {
+  margin-top: 1.15rem;
+  color: #17130e;
+  font-family: var(--font-noto-serif-kr), Georgia, serif;
+  font-size: 4.8rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.landing-title span {
+  display: block;
+}
+
+.landing-subtitle {
+  max-width: 43rem;
+  margin-top: 1.65rem;
+  color: #4a4135;
+  font-size: 1.18rem;
+  font-weight: 500;
+  line-height: 1.9;
+  text-wrap: balance;
+}
+
+.landing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2.35rem;
+}
+
+.visitor-ticket {
+  border: 1px solid rgba(28, 28, 28, 0.34);
+  background: rgba(250, 247, 238, 0.86);
+  padding: 1.15rem;
+  box-shadow:
+    0 30px 80px rgba(49, 37, 20, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px);
+}
+
+.ticket-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  border-bottom: 1px solid rgba(28, 28, 28, 0.16);
+  padding-bottom: 1rem;
+}
+
+.ticket-heading svg {
+  margin-top: 0.18rem;
+  color: #9b7a3c;
+}
+
+.ticket-heading p,
+.ticket-label {
+  color: #8a6b2f;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.ticket-heading h2 {
+  margin-top: 0.18rem;
+  font-family: var(--font-noto-serif-kr), Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.ticket-label {
+  display: block;
+  margin-top: 1.2rem;
+}
+
+.ticket-input {
+  width: 100%;
+  margin-top: 0.5rem;
+  border: 0;
+  border-bottom: 1px solid rgba(28, 28, 28, 0.42);
+  background: transparent;
+  padding: 0.85rem 0;
+  color: #17130e;
+  font-family: var(--font-geist-mono);
+  font-size: 1.45rem;
+  letter-spacing: 0.1em;
+  outline: none;
+  text-transform: uppercase;
+}
+
+.ticket-input:focus {
+  border-color: #9b7a3c;
+}
+
+.ticket-button {
+  width: 100%;
+  min-height: 3rem;
+  margin-top: 1rem;
+  border: 1px solid #17130e;
+  background: #17130e;
+  color: #f8f4ec;
+  font-weight: 700;
+}
+
+.landing-overview {
+  max-width: 90rem;
+  margin: 0 auto;
+  padding: 5rem 1.25rem 6rem;
+}
+
+.overview-heading {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 1fr);
+  gap: 2rem;
+  border-bottom: 1px solid rgba(28, 28, 28, 0.2);
+  padding-bottom: 2rem;
+}
+
+.overview-heading h2 {
+  max-width: 62rem;
+  font-family: var(--font-noto-serif-kr), Georgia, serif;
+  font-size: 3.2rem;
+  font-weight: 500;
+  line-height: 1.22;
+  text-wrap: balance;
+}
+
+.museum-feature-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-bottom: 1px solid rgba(28, 28, 28, 0.2);
+}
+
+.museum-feature {
+  min-height: 21rem;
+  border-right: 1px solid rgba(28, 28, 28, 0.14);
+  padding: 1.35rem 1.35rem 2rem 0;
+}
+
+.museum-feature:last-child {
+  border-right: 0;
+  padding-right: 0;
+  padding-left: 1.35rem;
+}
+
+.museum-feature:not(:first-child) {
+  padding-left: 1.35rem;
+}
+
+.museum-feature > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: #8a6b2f;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.museum-feature h3 {
+  margin-top: 5.5rem;
+  font-family: var(--font-noto-serif-kr), Georgia, serif;
+  font-size: 1.72rem;
+  font-weight: 500;
+  line-height: 1.42;
+}
+
+.museum-feature > p {
+  margin-top: 1.2rem;
+  color: #5f5548;
+  font-size: 0.98rem;
+  line-height: 1.85;
 }
 
 .gallery-button,
@@ -415,6 +684,65 @@ select {
 }
 
 @media (max-width: 720px) {
+  .landing-hero-inner {
+    min-height: auto;
+    padding-bottom: 2rem;
+  }
+
+  .landing-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-rail span,
+  .landing-rail span:nth-child(2),
+  .landing-rail span:nth-child(3) {
+    text-align: left;
+  }
+
+  .landing-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 2.25rem;
+    min-height: auto;
+    padding-top: 4rem;
+  }
+
+  .landing-title {
+    font-size: 3.35rem;
+    line-height: 1.14;
+  }
+
+  .landing-subtitle {
+    font-size: 1.02rem;
+    line-height: 1.82;
+  }
+
+  .visitor-ticket {
+    margin-bottom: 0.5rem;
+  }
+
+  .overview-heading,
+  .museum-feature-list {
+    grid-template-columns: 1fr;
+  }
+
+  .overview-heading h2 {
+    font-size: 2.35rem;
+    line-height: 1.32;
+  }
+
+  .museum-feature,
+  .museum-feature:last-child,
+  .museum-feature:not(:first-child) {
+    min-height: auto;
+    border-right: 0;
+    border-top: 1px solid rgba(28, 28, 28, 0.14);
+    padding: 1.4rem 0 2rem;
+  }
+
+  .museum-feature h3 {
+    margin-top: 3rem;
+  }
+
   .horizontal-gallery {
     min-height: 560px;
   }

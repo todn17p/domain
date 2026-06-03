@@ -10,10 +10,10 @@ export function GalleryHeader({
   minimal?: boolean;
 }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-stone-200/80 bg-[#f5f1e8]/90 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-        <Link href="/" className="font-serif text-xl tracking-[0.18em]">
-          ATELIER HALL
+    <header className="sticky top-0 z-20 border-b border-stone-950/10 bg-[#f5f1e8]/88 backdrop-blur">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3">
+        <Link href="/" className="brand-mark">
+          ARTFOLIO
         </Link>
         {!minimal && (
           <nav className="flex items-center gap-2 text-sm">
