@@ -53,13 +53,14 @@ set search_path = public
 as $$
 declare
   code text := 'ART-' || upper(substr(md5(new.id::text), 1, 4));
-  gallery_title text := coalesce(split_part(new.email, '@', 1), 'My') || ' Gallery';
+  profile_username text := coalesce(new.raw_user_meta_data ->> 'username', split_part(new.email, '@', 1), 'My');
+  gallery_title text := profile_username || ' Gallery';
 begin
   insert into public.profiles (id, email, username, gallery_name, gallery_description, gallery_code)
   values (
     new.id,
     new.email,
-    split_part(new.email, '@', 1),
+    profile_username,
     gallery_title,
     '이미지와 영상 작업물을 전시하는 개인 미술관입니다.',
     code

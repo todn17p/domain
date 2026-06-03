@@ -15,7 +15,7 @@ import {
   setAdminSession,
   verifyAdminCredentials,
 } from "@/lib/admin";
-import { hasSupabaseEnv } from "@/lib/supabase/config";
+import { hasSupabaseEnv, supabaseServiceRoleKey } from "@/lib/supabase/config";
 import {
   clearLocalSession,
   createLocalArtwork,
@@ -38,13 +38,32 @@ function artworkErrorUrl(roomId: string, error: string) {
   return `/dashboard/artworks/new?room=${encodeURIComponent(roomId)}&error=${encodeURIComponent(error)}`;
 }
 
+function dashboardErrorUrl(error: string) {
+  return `/dashboard?error=${encodeURIComponent(error)}`;
+}
+
+function authEmail(identifier: string) {
+  const normalized = identifier.trim().toLowerCase();
+  if (normalized.includes("@")) {
+    return normalized;
+  }
+
+  const clean = normalized.replace(/[^a-z0-9._-]/g, "");
+  return `${clean || crypto.randomUUID()}@artfolio.local`;
+}
+
+async function fileToDataUrl(file: File) {
+  const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
+  return `data:${file.type || "application/octet-stream"};base64,${base64}`;
+}
+
 export async function signUp(formData: FormData) {
-  const email = value(formData, "email");
+  const identifier = value(formData, "email");
   const password = value(formData, "password");
 
   if (!hasSupabaseEnv()) {
     try {
-      await createLocalUser(email, password);
+      await createLocalUser(identifier, password);
     } catch (error) {
       const message = error instanceof Error ? error.message : "회원가입 실패";
       redirect(`/signup?error=${encodeURIComponent(message)}`);
@@ -54,22 +73,65 @@ export async function signUp(formData: FormData) {
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signUp({ email, password });
+  const email = authEmail(identifier);
 
-  if (error) {
-    redirect(`/signup?error=${encodeURIComponent(error.message)}`);
+  if (supabaseServiceRoleKey) {
+    const admin = createSupabaseAdminClient();
+    const { error: createError } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        username: identifier,
+      },
+    });
+
+    if (createError && !createError.message.toLowerCase().includes("already")) {
+      redirect(`/signup?error=${encodeURIComponent(createError.message)}`);
+    }
+  } else {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username: identifier,
+        },
+      },
+    });
+
+    if (error) {
+      redirect(`/signup?error=${encodeURIComponent(error.message)}`);
+    }
+  }
+
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (signInError) {
+    redirect(`/login?error=${encodeURIComponent(signInError.message)}`);
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    await ensureGallery(supabase, user);
   }
 
   redirect("/dashboard");
 }
 
 export async function signIn(formData: FormData) {
-  const email = value(formData, "email");
+  const identifier = value(formData, "email");
+  const email = authEmail(identifier);
   const password = value(formData, "password");
 
   if (!hasSupabaseEnv()) {
     try {
-      await signInLocalUser(email, password);
+      await signInLocalUser(identifier, password);
     } catch (error) {
       const message = error instanceof Error ? error.message : "로그인 실패";
       redirect(`/login?error=${encodeURIComponent(message)}`);
@@ -120,8 +182,8 @@ export async function updateGallery(formData: FormData) {
 
   if (!user) redirect("/login");
 
-  const gallery = await ensureGallery(supabase, user);
-  await supabase
+    const gallery = await ensureGallery(supabase, user);
+  const { error } = await supabase
     .from("galleries")
     .update({
       name: value(formData, "name"),
@@ -130,6 +192,10 @@ export async function updateGallery(formData: FormData) {
     })
     .eq("id", gallery.id)
     .eq("user_id", user.id);
+
+  if (error) {
+    redirect(dashboardErrorUrl(error.message));
+  }
 
   revalidatePath("/dashboard");
 }
@@ -156,12 +222,16 @@ export async function createThemeRoom(formData: FormData) {
   if (!user) redirect("/login");
 
   const gallery = await ensureGallery(supabase, user);
-  await supabase.from("theme_rooms").insert({
+  const { error } = await supabase.from("theme_rooms").insert({
     gallery_id: gallery.id,
     user_id: user.id,
     title: value(formData, "title"),
     description: value(formData, "description"),
   });
+
+  if (error) {
+    redirect(dashboardErrorUrl(error.message));
+  }
 
   revalidatePath("/dashboard");
 }
@@ -184,11 +254,16 @@ export async function deleteThemeRoom(formData: FormData) {
 
   if (!user) redirect("/login");
 
-  await supabase
+  const { error } = await supabase
     .from("theme_rooms")
     .delete()
     .eq("id", roomId)
     .eq("user_id", user.id);
+
+  if (error) {
+    redirect(dashboardErrorUrl(error.message));
+  }
+
   revalidatePath("/dashboard");
 }
 
@@ -209,21 +284,28 @@ export async function createArtwork(formData: FormData) {
       redirect(artworkErrorUrl(roomId, "too-large"));
     }
 
-    const ext = file.name.split(".").pop()?.toLowerCase() ?? "upload";
-    const fileName = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
-    const uploadDir = nodePath.join(
-      process.cwd(),
-      "public",
-      "uploads",
-      user.id,
-    );
-
     try {
-      await mkdir(uploadDir, { recursive: true });
-      await writeFile(
-        nodePath.join(uploadDir, fileName),
-        Buffer.from(await file.arrayBuffer()),
-      );
+      let mediaUrl = "";
+
+      if (process.env.VERCEL) {
+        mediaUrl = await fileToDataUrl(file);
+      } else {
+        const ext = file.name.split(".").pop()?.toLowerCase() ?? "upload";
+        const fileName = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
+        const uploadDir = nodePath.join(
+          process.cwd(),
+          "public",
+          "uploads",
+          user.id,
+        );
+
+        await mkdir(uploadDir, { recursive: true });
+        await writeFile(
+          nodePath.join(uploadDir, fileName),
+          Buffer.from(await file.arrayBuffer()),
+        );
+        mediaUrl = `/uploads/${user.id}/${fileName}`;
+      }
 
       await createLocalArtwork(user.id, {
         theme_room_id: localRoom.room.id,
@@ -231,7 +313,7 @@ export async function createArtwork(formData: FormData) {
         title: value(formData, "title"),
         description: value(formData, "description"),
         media_type: value(formData, "media_type") === "video" ? "video" : "image",
-        media_url: `/uploads/${user.id}/${fileName}`,
+        media_url: mediaUrl,
         tools: value(formData, "tools"),
         year: value(formData, "year"),
       });
@@ -290,7 +372,7 @@ export async function createArtwork(formData: FormData) {
     .from("artwork-media")
     .getPublicUrl(path);
 
-  await supabase.from("artworks").insert({
+  const { error: artworkError } = await supabase.from("artworks").insert({
     theme_room_id: room.id,
     gallery_id: room.gallery_id,
     user_id: user.id,
@@ -301,6 +383,10 @@ export async function createArtwork(formData: FormData) {
     tools: value(formData, "tools"),
     year: value(formData, "year"),
   });
+
+  if (artworkError) {
+    redirect(artworkErrorUrl(roomId, artworkError.message));
+  }
 
   redirect(`/dashboard/rooms/${room.id}`);
 }

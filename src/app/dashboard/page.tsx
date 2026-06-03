@@ -16,7 +16,13 @@ import { hasSupabaseEnv } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Artwork, Gallery, ThemeRoom } from "@/lib/types";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
+
   if (!hasSupabaseEnv()) {
     const user = await getCurrentLocalUser();
     if (!user) redirect("/login");
@@ -27,6 +33,7 @@ export default async function DashboardPage() {
     return (
       <DashboardView
         artworks={dashboard.artworks}
+        error={error}
         gallery={dashboard.gallery}
         rooms={dashboard.rooms}
       />
@@ -58,6 +65,7 @@ export default async function DashboardPage() {
   return (
     <DashboardView
       artworks={(artworks as Artwork[] | null) ?? []}
+      error={error}
       gallery={gallery}
       rooms={(rooms as ThemeRoom[] | null) ?? []}
     />
@@ -66,10 +74,12 @@ export default async function DashboardPage() {
 
 function DashboardView({
   artworks,
+  error,
   gallery,
   rooms,
 }: {
   artworks: Artwork[];
+  error?: string;
   gallery: Gallery;
   rooms: ThemeRoom[];
 }) {
@@ -79,6 +89,11 @@ function DashboardView({
       <GalleryHeader isAuthed />
       <main className="min-h-screen bg-[#f5f1e8]">
         <section className="mx-auto max-w-7xl px-5 py-10">
+          {error && (
+            <p className="error-text mb-6">
+              작업을 완료하지 못했습니다: {decodeURIComponent(error)}
+            </p>
+          )}
           <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
             <form action={updateGallery} className="gallery-panel">
               <p className="section-kicker">내 미술관</p>

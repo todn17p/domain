@@ -18,7 +18,10 @@ type LocalDb = {
 };
 
 const SESSION_COOKIE = "portfolio-gallery-local-user";
-const dbPath = path.join(process.cwd(), ".data", "local-db.json");
+const localDataRoot = process.env.VERCEL
+  ? path.join("/tmp", "artfolio")
+  : path.join(process.cwd(), ".data");
+const dbPath = path.join(localDataRoot, "local-db.json");
 
 const emptyDb: LocalDb = {
   users: [],

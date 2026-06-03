@@ -3,8 +3,18 @@ import { adminDeleteUser, adminLogin, adminLogout } from "@/app/actions";
 import { GalleryHeader } from "@/components/gallery-shell";
 import { isAdminLoggedIn } from "@/lib/admin";
 import { listLocalUsers } from "@/lib/local-db";
-import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import {
+  createSupabaseAdminClient,
+  createSupabaseServerClient,
+} from "@/lib/supabase/server";
 import { hasSupabaseEnv, supabaseServiceRoleKey } from "@/lib/supabase/config";
+
+type AdminUserRow = {
+  id: string;
+  email?: string;
+  created_at?: string;
+  canDelete: boolean;
+};
 
 export default async function AdminPage({
   searchParams,
@@ -13,22 +23,44 @@ export default async function AdminPage({
 }) {
   const { error } = await searchParams;
   const loggedIn = await isAdminLoggedIn();
-  let users: { id: string; email?: string; created_at?: string }[] = [];
+  let users: AdminUserRow[] = [];
   let setupError = "";
 
   if (loggedIn) {
     try {
       if (!hasSupabaseEnv()) {
-        users = await listLocalUsers();
+        users = (await listLocalUsers()).map((user) => ({
+          ...user,
+          canDelete: true,
+        }));
       } else if (!supabaseServiceRoleKey) {
-        throw new Error("SUPABASE_SERVICE_ROLE_KEY까지 설정해야 계정 삭제가 가능합니다.");
+        const supabase = await createSupabaseServerClient();
+        const { data, error: galleriesError } = await supabase
+          .from("galleries")
+          .select("user_id,name,gallery_code,created_at")
+          .order("created_at", { ascending: false });
+
+        if (galleriesError) {
+          throw galleriesError;
+        }
+
+        users = (data ?? []).map((gallery) => ({
+          id: gallery.user_id,
+          email: `${gallery.name} (${gallery.gallery_code})`,
+          created_at: gallery.created_at,
+          canDelete: false,
+        }));
       } else {
         const supabase = createSupabaseAdminClient();
         const { data } = await supabase.auth.admin.listUsers();
         users = data.users.map((user) => ({
           id: user.id,
-          email: user.email,
+          email:
+            typeof user.user_metadata?.username === "string"
+              ? user.user_metadata.username
+              : user.email,
           created_at: user.created_at,
+          canDelete: true,
         }));
       }
     } catch (err) {
@@ -90,12 +122,18 @@ export default async function AdminPage({
                         <p className="truncate text-sm">{user.email}</p>
                         <p className="truncate text-xs text-stone-400">{user.id}</p>
                       </div>
-                      <form action={adminDeleteUser}>
-                        <input name="userId" type="hidden" value={user.id} />
-                        <button className="danger-button" type="submit">
-                          계정 삭제
-                        </button>
-                      </form>
+                      {user.canDelete ? (
+                        <form action={adminDeleteUser}>
+                          <input name="userId" type="hidden" value={user.id} />
+                          <button className="danger-button" type="submit">
+                            계정 삭제
+                          </button>
+                        </form>
+                      ) : (
+                        <span className="text-xs text-stone-500">
+                          삭제 권한 설정 필요
+                        </span>
+                      )}
                     </div>
                   ))}
                   {!users.length && <p className="text-sm text-stone-400">계정이 없습니다.</p>}
