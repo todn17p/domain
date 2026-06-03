@@ -83,12 +83,14 @@ export default async function AdminPage({
           {!loggedIn ? (
             <form action={adminLogin} className="mt-8 space-y-4">
               <input
+                autoComplete="username"
                 className="admin-input"
                 name="id"
                 placeholder="enter your id"
                 required
               />
               <input
+                autoComplete="current-password"
                 className="admin-input"
                 name="password"
                 placeholder="enter your password"
