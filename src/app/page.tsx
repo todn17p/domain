@@ -1,65 +1,87 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, DoorOpen } from "lucide-react";
+import { EnvWarning } from "@/components/env-warning";
+import { GalleryHeader } from "@/components/gallery-shell";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <>
+      <EnvWarning />
+      <GalleryHeader />
+      <main className="min-h-screen bg-[#f5f1e8]">
+        <section className="relative overflow-hidden border-b border-stone-200">
+          <div className="absolute inset-0 opacity-25">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              className="h-full w-full object-cover"
+              src="https://images.unsplash.com/photo-1541961017774-22349e4a1262?auto=format&fit=crop&w=1800&q=80"
+              alt="고요한 미술관 전시장"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          </div>
+          <div className="relative mx-auto grid min-h-[76vh] max-w-7xl items-end px-5 pb-14 pt-28 md:grid-cols-[1.1fr_0.9fr] md:gap-12">
+            <div>
+              <p className="text-sm uppercase tracking-[0.38em] text-[#8a6b2f]">
+                Private Online Museum
+              </p>
+              <h1 className="mt-5 max-w-4xl font-serif text-5xl leading-tight text-stone-950 md:text-7xl">
+                당신의 작업물을 하나의 미술관으로 전시하세요.
+              </h1>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-700">
+                이미지와 영상 포트폴리오를 작품처럼 보여주는 온라인 갤러리.
+                테마관을 만들고, 고유 코드로 방문객을 초대하세요.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link className="gallery-button" href="/signup">
+                  회원가입 <ArrowRight size={17} />
+                </Link>
+                <Link className="gallery-button-secondary" href="/login">
+                  로그인
+                </Link>
+              </div>
+            </div>
+
+            <form
+              action="/visit"
+              className="mt-12 border border-stone-300 bg-[#f8f4ec]/85 p-5 shadow-[0_28px_80px_rgba(38,31,20,0.16)] backdrop-blur md:mt-0"
+            >
+              <div className="flex items-center gap-3 border-b border-stone-300 pb-4">
+                <DoorOpen className="text-[#9b7a3c]" />
+                <div>
+                  <h2 className="font-serif text-2xl">미술관 입장</h2>
+                  <p className="text-sm text-stone-600">
+                    공유받은 코드를 입력하세요.
+                  </p>
+                </div>
+              </div>
+              <input
+                className="gallery-input mt-5 uppercase"
+                name="code"
+                placeholder="ART-93KD"
+                required
+              />
+              <button className="gallery-button mt-4 w-full" type="submit">
+                미술관 입장하기
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-5 py-12">
+          <div className="grid gap-4 md:grid-cols-3">
+            {["전시실처럼 나누는 테마관", "좌우로 빠르게 넘기는 작품 벽", "코드로 초대하는 방문객 보기"].map(
+              (title) => (
+                <div className="border-l border-[#c8a96a] bg-white/50 p-6" key={title}>
+                  <p className="font-serif text-2xl">{title}</p>
+                  <p className="mt-3 text-sm leading-6 text-stone-600">
+                    작품이 먼저 보이고 설명은 미술관 라벨처럼 차분하게 따라오는
+                    포트폴리오 경험을 제공합니다.
+                  </p>
+                </div>
+              ),
+            )}
+          </div>
+        </section>
       </main>
-    </div>
+    </>
   );
 }
