@@ -50,13 +50,10 @@ export default function Home() {
               <div className="landing-copy">
                 <p className="museum-kicker">ARTFOLIO.AI.KR</p>
                 <h1 className="landing-title">
-                  작업물을
-                  <span>하나의 미술관으로</span>
-                  전시하세요.
+                  Works to Museum.
                 </h1>
                 <p className="landing-subtitle">
-                  이미지와 영상 포트폴리오를 단순한 파일 목록이 아니라,
-                  전시실과 작품 라벨을 갖춘 온라인 갤러리로 보여주세요.
+                  한 눈에 정리하는 나만의 포트폴리오.
                 </p>
                 <div className="landing-actions">
                   <Link className="gallery-button" href="/signup">

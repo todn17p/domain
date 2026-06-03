@@ -134,11 +134,11 @@ select {
   margin-top: 1.15rem;
   color: #17130e;
   font-family: var(--font-noto-serif-kr), Georgia, serif;
-  font-size: 4.8rem;
+  font-size: clamp(4.4rem, 8vw, 7rem);
   font-weight: 600;
   letter-spacing: 0;
   line-height: 1.08;
-  text-wrap: balance;
+  white-space: nowrap;
 }
 
 .landing-title span {
@@ -707,8 +707,9 @@ select {
   }
 
   .landing-title {
-    font-size: 3.35rem;
+    font-size: clamp(2.55rem, 12vw, 3.35rem);
     line-height: 1.14;
+    white-space: normal;
   }
 
   .landing-subtitle {
