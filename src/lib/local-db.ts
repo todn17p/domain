@@ -18,6 +18,7 @@ type LocalDb = {
 };
 
 const SESSION_COOKIE = "portfolio-gallery-local-user";
+const DB_COOKIE = "portfolio-gallery-local-db";
 const localDataRoot = process.env.VERCEL
   ? path.join("/tmp", "artfolio")
   : path.join(process.cwd(), ".data");
@@ -45,6 +46,23 @@ function codeFor(username: string) {
 }
 
 export async function readLocalDb(): Promise<LocalDb> {
+  if (process.env.VERCEL) {
+    const cookieStore = await cookies();
+    const encoded = cookieStore.get(DB_COOKIE)?.value;
+
+    if (encoded) {
+      try {
+        return JSON.parse(
+          Buffer.from(encoded, "base64url").toString("utf-8"),
+        ) as LocalDb;
+      } catch {
+        return { ...emptyDb };
+      }
+    }
+
+    return { ...emptyDb };
+  }
+
   try {
     return JSON.parse(await readFile(dbPath, "utf-8")) as LocalDb;
   } catch {
@@ -53,6 +71,22 @@ export async function readLocalDb(): Promise<LocalDb> {
 }
 
 async function writeLocalDb(db: LocalDb) {
+  if (process.env.VERCEL) {
+    const cookieStore = await cookies();
+    const encoded = Buffer.from(JSON.stringify(db), "utf-8").toString(
+      "base64url",
+    );
+
+    cookieStore.set(DB_COOKIE, encoded, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: true,
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
+    return;
+  }
+
   await mkdir(path.dirname(dbPath), { recursive: true });
   await writeFile(dbPath, JSON.stringify(db, null, 2));
 }
