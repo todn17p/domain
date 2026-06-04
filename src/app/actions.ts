@@ -72,6 +72,14 @@ function authEmail(identifier: string) {
   return `${clean || crypto.randomUUID()}@artfolio.local`;
 }
 
+function authPassword(password: string) {
+  if (password.length >= 6) {
+    return password;
+  }
+
+  return `${password}__artfolio`;
+}
+
 async function fileToDataUrl(file: File) {
   const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
   return `data:${file.type || "application/octet-stream"};base64,${base64}`;
@@ -94,12 +102,13 @@ export async function signUp(formData: FormData) {
 
   const supabase = await supabaseActionClient((message) => `/signup?error=${encodeURIComponent(message)}`);
   const email = authEmail(identifier);
+  const authPasswordValue = authPassword(password);
 
   if (supabaseServiceRoleKey) {
     const admin = supabaseAdminActionClient((message) => `/signup?error=${encodeURIComponent(message)}`);
     const { error: createError } = await admin.auth.admin.createUser({
       email,
-      password,
+      password: authPasswordValue,
       email_confirm: true,
       user_metadata: {
         username: identifier,
@@ -112,7 +121,7 @@ export async function signUp(formData: FormData) {
   } else {
     const { error } = await supabase.auth.signUp({
       email,
-      password,
+      password: authPasswordValue,
       options: {
         data: {
           username: identifier,
@@ -127,7 +136,7 @@ export async function signUp(formData: FormData) {
 
   const { error: signInError } = await supabase.auth.signInWithPassword({
     email,
-    password,
+    password: authPasswordValue,
   });
 
   if (signInError) {
@@ -148,6 +157,7 @@ export async function signIn(formData: FormData) {
   const identifier = value(formData, "email");
   const email = authEmail(identifier);
   const password = value(formData, "password");
+  const authPasswordValue = authPassword(password);
 
   if (!hasSupabaseEnv()) {
     try {
@@ -161,7 +171,10 @@ export async function signIn(formData: FormData) {
   }
 
   const supabase = await supabaseActionClient((message) => `/login?error=${encodeURIComponent(message)}`);
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password: authPasswordValue,
+  });
 
   if (error) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
