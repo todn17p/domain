@@ -12,8 +12,11 @@ import { EnvWarning } from "@/components/env-warning";
 import { GalleryHeader } from "@/components/gallery-shell";
 import { ensureGallery } from "@/lib/gallery";
 import { getCurrentLocalUser, getLocalDashboard } from "@/lib/local-db";
-import { hasSupabaseEnv } from "@/lib/supabase/config";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { hasSupabaseEnv, supabaseServiceRoleKey } from "@/lib/supabase/config";
+import {
+  createSupabaseAdminClient,
+  createSupabaseServerClient,
+} from "@/lib/supabase/server";
 import type { Artwork, Gallery, ThemeRoom } from "@/lib/types";
 
 export default async function DashboardPage({
@@ -47,9 +50,13 @@ export default async function DashboardPage({
 
   if (!user) redirect("/login");
 
+  const dataClient = supabaseServiceRoleKey
+    ? createSupabaseAdminClient()
+    : supabase;
+
   let gallery;
   try {
-    gallery = await ensureGallery(supabase, user);
+    gallery = await ensureGallery(dataClient, user);
   } catch (galleryError) {
     const message =
       galleryError instanceof Error
@@ -62,12 +69,12 @@ export default async function DashboardPage({
     { data: rooms, error: roomsError },
     { data: artworks, error: artworksError },
   ] = await Promise.all([
-    supabase
+    dataClient
       .from("theme_rooms")
       .select("*")
       .eq("gallery_id", gallery.id)
       .order("created_at"),
-    supabase
+    dataClient
       .from("artworks")
       .select("*")
       .eq("gallery_id", gallery.id)

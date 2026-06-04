@@ -4,8 +4,11 @@ import { redirect } from "next/navigation";
 import { ArtworkWall } from "@/components/artwork-wall";
 import { GalleryHeader } from "@/components/gallery-shell";
 import { getCurrentLocalUser, getLocalRoom } from "@/lib/local-db";
-import { hasSupabaseEnv } from "@/lib/supabase/config";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { hasSupabaseEnv, supabaseServiceRoleKey } from "@/lib/supabase/config";
+import {
+  createSupabaseAdminClient,
+  createSupabaseServerClient,
+} from "@/lib/supabase/server";
 import type { Artwork, ThemeRoom } from "@/lib/types";
 
 export default async function RoomPage({
@@ -34,14 +37,18 @@ export default async function RoomPage({
 
   if (!user) redirect("/login");
 
+  const dataClient = supabaseServiceRoleKey
+    ? createSupabaseAdminClient()
+    : supabase;
+
   const [{ data: room }, { data: artworks }] = await Promise.all([
-    supabase
+    dataClient
       .from("theme_rooms")
       .select("*")
       .eq("id", id)
       .eq("user_id", user.id)
       .single(),
-    supabase
+    dataClient
       .from("artworks")
       .select("*")
       .eq("theme_room_id", id)

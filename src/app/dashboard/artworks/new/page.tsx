@@ -3,8 +3,11 @@ import { redirect } from "next/navigation";
 import { createArtwork } from "@/app/actions";
 import { GalleryHeader } from "@/components/gallery-shell";
 import { getCurrentLocalUser, getLocalRoom } from "@/lib/local-db";
-import { hasSupabaseEnv } from "@/lib/supabase/config";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { hasSupabaseEnv, supabaseServiceRoleKey } from "@/lib/supabase/config";
+import {
+  createSupabaseAdminClient,
+  createSupabaseServerClient,
+} from "@/lib/supabase/server";
 
 function errorMessage(error?: string) {
   if (!error) return "";
@@ -42,7 +45,10 @@ export default async function NewArtworkPage({
 
   if (!user) redirect("/login");
 
-  const { data: room } = await supabase
+  const dataClient = supabaseServiceRoleKey
+    ? createSupabaseAdminClient()
+    : supabase;
+  const { data: room } = await dataClient
     .from("theme_rooms")
     .select("id,title")
     .eq("id", roomId)

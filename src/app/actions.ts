@@ -313,6 +313,7 @@ export async function updateGallery(formData: FormData) {
   }
 
   revalidatePath("/dashboard");
+  redirect("/dashboard");
 }
 
 export async function createThemeRoom(formData: FormData) {
@@ -360,6 +361,7 @@ export async function createThemeRoom(formData: FormData) {
   }
 
   revalidatePath("/dashboard");
+  redirect("/dashboard");
 }
 
 export async function deleteThemeRoom(formData: FormData) {
@@ -392,6 +394,7 @@ export async function deleteThemeRoom(formData: FormData) {
   }
 
   revalidatePath("/dashboard");
+  redirect("/dashboard");
 }
 
 export async function createArtwork(formData: FormData) {
@@ -473,7 +476,8 @@ export async function createArtwork(formData: FormData) {
     redirect(artworkErrorUrl(roomId, "too-large"));
   }
 
-  const { data: room, error: roomError } = await supabase
+  const dataClient = supabaseMutationClient();
+  const { data: room, error: roomError } = await dataClient
     .from("theme_rooms")
     .select("id,gallery_id,user_id")
     .eq("id", roomId)
@@ -553,6 +557,7 @@ export async function deleteArtwork(formData: FormData) {
     .eq("id", artworkId)
     .eq("user_id", user.id);
   revalidatePath("/dashboard");
+  redirect("/dashboard");
 }
 
 export async function adminLogin(formData: FormData) {
