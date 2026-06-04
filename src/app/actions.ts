@@ -108,15 +108,9 @@ async function fileToDataUrl(file: File) {
 
 async function ensureArtworkBucket() {
   const admin = createSupabaseAdminClient();
-  const { data: buckets, error: listError } = await admin.storage.listBuckets();
-  if (listError) {
-    throw listError;
-  }
-
-  const bucket = buckets.find((item) => item.name === "artwork-media");
   const options = {
     public: true,
-    fileSizeLimit: 100 * 1024 * 1024,
+    fileSizeLimit: String(100 * 1024 * 1024),
     allowedMimeTypes: [
       "image/jpeg",
       "image/png",
@@ -127,17 +121,23 @@ async function ensureArtworkBucket() {
     ],
   };
 
+  const { data: bucket } = await admin.storage.getBucket("artwork-media");
+
   if (!bucket) {
     const { error } = await admin.storage.createBucket("artwork-media", options);
     if (error) {
       throw error;
     }
-    return admin;
   }
 
   const { error } = await admin.storage.updateBucket("artwork-media", options);
   if (error) {
     throw error;
+  }
+
+  const { error: verifyError } = await admin.storage.getBucket("artwork-media");
+  if (verifyError) {
+    throw verifyError;
   }
 
   return admin;

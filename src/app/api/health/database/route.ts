@@ -46,9 +46,8 @@ export async function GET() {
     }),
   );
 
-  const { data: buckets, error: bucketError } =
-    await supabase.storage.listBuckets();
-  const artworkBucket = buckets?.find((bucket) => bucket.name === "artwork-media");
+  const { data: artworkBucket, error: bucketError } =
+    await supabase.storage.getBucket("artwork-media");
 
   return NextResponse.json({
     ok:
@@ -69,6 +68,10 @@ export async function GET() {
       artworkMediaFileSizeLimit: artworkBucket?.file_size_limit ?? null,
       artworkMediaAllowedMimeTypes: artworkBucket?.allowed_mime_types ?? null,
       error: bucketError?.message ?? null,
+      statusCode:
+        bucketError && "statusCode" in bucketError
+          ? bucketError.statusCode
+          : null,
     },
     note: "No secret keys are returned. This checks schema and storage readiness only.",
   });
