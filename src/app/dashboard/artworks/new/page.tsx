@@ -15,7 +15,7 @@ function errorMessage(error?: string) {
     return "파일이 선택되지 않았습니다. 이미지 또는 영상을 첨부해주세요.";
   }
   if (error === "too-large") {
-    return "파일이 너무 큽니다. 현재 업로드 제한은 100MB입니다.";
+    return "파일이 너무 큽니다. 현재 업로드 제한은 200MB입니다.";
   }
   return decodeURIComponent(error);
 }

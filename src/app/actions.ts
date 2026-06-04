@@ -29,6 +29,7 @@ import {
   signInLocalUser,
   updateLocalGallery,
 } from "@/lib/local-db";
+import { ARTWORK_BUCKET, ARTWORK_MAX_FILE_SIZE, ensureArtworkBucket } from "@/lib/storage";
 
 function value(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -104,43 +105,6 @@ function authPassword(password: string) {
 async function fileToDataUrl(file: File) {
   const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
   return `data:${file.type || "application/octet-stream"};base64,${base64}`;
-}
-
-async function ensureArtworkBucket() {
-  const admin = createSupabaseAdminClient();
-  const options = {
-    public: true,
-    fileSizeLimit: String(100 * 1024 * 1024),
-    allowedMimeTypes: [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "video/mp4",
-      "video/quicktime",
-      "video/webm",
-    ],
-  };
-
-  const { data: bucket } = await admin.storage.getBucket("artwork-media");
-
-  if (!bucket) {
-    const { error } = await admin.storage.createBucket("artwork-media", options);
-    if (error) {
-      throw error;
-    }
-  }
-
-  const { error } = await admin.storage.updateBucket("artwork-media", options);
-  if (error) {
-    throw error;
-  }
-
-  const { error: verifyError } = await admin.storage.getBucket("artwork-media");
-  if (verifyError) {
-    throw verifyError;
-  }
-
-  return admin;
 }
 
 export async function signUp(formData: FormData) {
@@ -408,7 +372,7 @@ export async function createArtwork(formData: FormData) {
       redirect(artworkErrorUrl(roomId, "file"));
     }
 
-    if (file.size > 100 * 1024 * 1024) {
+    if (file.size > ARTWORK_MAX_FILE_SIZE) {
       redirect(artworkErrorUrl(roomId, "too-large"));
     }
 
@@ -470,7 +434,7 @@ export async function createArtwork(formData: FormData) {
     redirect(artworkErrorUrl(roomId, "file"));
   }
 
-  if (file.size > 100 * 1024 * 1024) {
+  if (file.size > ARTWORK_MAX_FILE_SIZE) {
     redirect(artworkErrorUrl(roomId, "too-large"));
   }
 
@@ -490,13 +454,14 @@ export async function createArtwork(formData: FormData) {
 
   let mutationClient;
   try {
-    mutationClient = await ensureArtworkBucket();
+    const ensured = await ensureArtworkBucket();
+    mutationClient = ensured.admin;
   } catch (error) {
     redirect(artworkErrorUrl(roomId, readableError(error, "bucket-failed")));
   }
 
   const { error: uploadError } = await mutationClient.storage
-    .from("artwork-media")
+    .from(ARTWORK_BUCKET)
     .upload(path, fileBuffer, {
       cacheControl: "3600",
       contentType: file.type || "application/octet-stream",
@@ -509,7 +474,7 @@ export async function createArtwork(formData: FormData) {
   }
 
   const { data: publicUrl } = mutationClient.storage
-    .from("artwork-media")
+    .from(ARTWORK_BUCKET)
     .getPublicUrl(path);
 
   const { error: artworkError } = await mutationClient.from("artworks").insert({
