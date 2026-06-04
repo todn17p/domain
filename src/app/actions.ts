@@ -29,7 +29,12 @@ import {
   signInLocalUser,
   updateLocalGallery,
 } from "@/lib/local-db";
-import { ARTWORK_BUCKET, ARTWORK_MAX_FILE_SIZE, ensureArtworkBucket } from "@/lib/storage";
+import {
+  ARTWORK_BUCKET,
+  ARTWORK_ALLOWED_MIME_TYPES,
+  ARTWORK_MAX_FILE_SIZE,
+  ensureArtworkBucket,
+} from "@/lib/storage";
 
 function value(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -102,9 +107,151 @@ function authPassword(password: string) {
   return `${password}__artfolio`;
 }
 
+function uploadExtension(fileName: string) {
+  return fileName.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ?? "upload";
+}
+
 async function fileToDataUrl(file: File) {
   const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
   return `data:${file.type || "application/octet-stream"};base64,${base64}`;
+}
+
+export async function createArtworkUploadTarget(formData: FormData) {
+  if (!hasSupabaseEnv()) {
+    return { ok: false, error: "Supabase Storage가 연결되어 있지 않습니다." };
+  }
+
+  const roomId = value(formData, "theme_room_id");
+  const fileName = value(formData, "file_name");
+  const fileType = value(formData, "file_type") || "application/octet-stream";
+  const fileSize = Number(value(formData, "file_size"));
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, error: "로그인이 필요합니다." };
+  }
+
+  if (!roomId || !fileName || !Number.isFinite(fileSize) || fileSize <= 0) {
+    return { ok: false, error: "업로드할 파일 정보를 확인해주세요." };
+  }
+
+  if (fileSize > ARTWORK_MAX_FILE_SIZE) {
+    return { ok: false, error: "파일이 너무 큽니다. 최대 200MB까지 시도할 수 있습니다." };
+  }
+
+  if (!ARTWORK_ALLOWED_MIME_TYPES.includes(fileType)) {
+    return { ok: false, error: "지원하지 않는 파일 형식입니다." };
+  }
+
+  const dataClient = supabaseMutationClient();
+  const { data: room, error: roomError } = await dataClient
+    .from("theme_rooms")
+    .select("id")
+    .eq("id", roomId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (roomError || !room) {
+    return { ok: false, error: "테마관을 확인할 수 없습니다." };
+  }
+
+  let ensured;
+  try {
+    ensured = await ensureArtworkBucket();
+  } catch (error) {
+    return { ok: false, error: readableError(error, "Storage 버킷 준비에 실패했습니다.") };
+  }
+
+  const appliedLimit = ensured.bucket.file_size_limit ?? ARTWORK_MAX_FILE_SIZE;
+  if (fileSize > appliedLimit) {
+    const mb = Math.floor(appliedLimit / 1024 / 1024);
+    return {
+      ok: false,
+      error: `현재 Supabase 프로젝트의 Storage 업로드 제한은 ${mb}MB입니다.`,
+    };
+  }
+
+  const path = `${user.id}/${Date.now()}-${crypto.randomUUID()}.${uploadExtension(fileName)}`;
+  const { data, error } = await ensured.admin.storage
+    .from(ARTWORK_BUCKET)
+    .createSignedUploadUrl(path);
+
+  if (error || !data) {
+    return {
+      ok: false,
+      error: error?.message ?? "업로드 URL을 만들지 못했습니다.",
+    };
+  }
+
+  return {
+    ok: true,
+    bucket: ARTWORK_BUCKET,
+    path: data.path,
+    token: data.token,
+    appliedLimit,
+  };
+}
+
+export async function saveUploadedArtwork(formData: FormData) {
+  if (!hasSupabaseEnv()) {
+    return { ok: false, error: "Supabase Storage가 연결되어 있지 않습니다." };
+  }
+
+  const roomId = value(formData, "theme_room_id");
+  const mediaType = value(formData, "media_type") === "video" ? "video" : "image";
+  const path = value(formData, "media_path");
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, error: "로그인이 필요합니다." };
+  }
+
+  if (!path.startsWith(`${user.id}/`)) {
+    return { ok: false, error: "업로드 경로를 확인할 수 없습니다." };
+  }
+
+  const mutationClient = supabaseMutationClient();
+  const { data: room, error: roomError } = await mutationClient
+    .from("theme_rooms")
+    .select("id,gallery_id,user_id")
+    .eq("id", roomId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (roomError || !room) {
+    return { ok: false, error: "테마관을 확인할 수 없습니다." };
+  }
+
+  const { data: publicUrl } = mutationClient.storage
+    .from(ARTWORK_BUCKET)
+    .getPublicUrl(path);
+
+  const { error } = await mutationClient.from("artworks").insert({
+    theme_room_id: room.id,
+    gallery_id: room.gallery_id,
+    user_id: user.id,
+    title: value(formData, "title"),
+    description: value(formData, "description"),
+    media_type: mediaType,
+    media_url: publicUrl.publicUrl,
+    tools: value(formData, "tools"),
+    year: value(formData, "year"),
+  });
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  revalidatePath(`/dashboard/rooms/${room.id}`);
+  revalidatePath("/dashboard");
+
+  return { ok: true, roomUrl: `/dashboard/rooms/${room.id}` };
 }
 
 export async function signUp(formData: FormData) {

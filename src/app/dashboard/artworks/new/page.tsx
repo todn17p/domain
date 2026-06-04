@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createArtwork } from "@/app/actions";
+import { ArtworkUploadForm } from "@/components/artwork-upload-form";
 import { GalleryHeader } from "@/components/gallery-shell";
 import { getCurrentLocalUser, getLocalRoom } from "@/lib/local-db";
 import { hasSupabaseEnv, supabaseServiceRoleKey } from "@/lib/supabase/config";
@@ -57,7 +58,14 @@ export default async function NewArtworkPage({
 
   if (!room) redirect("/dashboard");
 
-  return <ArtworkForm error={error} roomId={roomId} roomTitle={room.title} />;
+  return (
+    <>
+      <GalleryHeader isAuthed />
+      <main className="exhibition-page min-h-screen px-5 py-10">
+        <ArtworkUploadForm error={error} roomId={roomId} roomTitle={room.title} />
+      </main>
+    </>
+  );
 }
 
 function ArtworkForm({
