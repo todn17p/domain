@@ -47,8 +47,21 @@ export default async function DashboardPage({
 
   if (!user) redirect("/login");
 
-  const gallery = await ensureGallery(supabase, user);
-  const [{ data: rooms }, { data: artworks }] = await Promise.all([
+  let gallery;
+  try {
+    gallery = await ensureGallery(supabase, user);
+  } catch (galleryError) {
+    const message =
+      galleryError instanceof Error
+        ? galleryError.message
+        : "미술관 정보를 불러오지 못했습니다.";
+    return <DashboardSetupError error={error ?? message} />;
+  }
+
+  const [
+    { data: rooms, error: roomsError },
+    { data: artworks, error: artworksError },
+  ] = await Promise.all([
     supabase
       .from("theme_rooms")
       .select("*")
@@ -61,14 +74,39 @@ export default async function DashboardPage({
       .order("created_at", { ascending: false })
       .limit(8),
   ]);
+  const dataError = roomsError?.message ?? artworksError?.message ?? error;
 
   return (
     <DashboardView
       artworks={(artworks as Artwork[] | null) ?? []}
-      error={error}
+      error={dataError}
       gallery={gallery}
       rooms={(rooms as ThemeRoom[] | null) ?? []}
     />
+  );
+}
+
+function DashboardSetupError({ error }: { error?: string }) {
+  return (
+    <>
+      <EnvWarning />
+      <GalleryHeader isAuthed />
+      <main className="min-h-screen bg-[#f5f1e8] px-5 py-10">
+        <section className="gallery-panel mx-auto max-w-3xl">
+          <p className="section-kicker">Database Setup</p>
+          <h1 className="mt-3 font-serif text-4xl">미술관을 열 수 없습니다</h1>
+          <p className="error-text mt-6">
+            Supabase 데이터베이스 설정을 확인해주세요:{" "}
+            {error ? decodeURIComponent(error) : "알 수 없는 오류"}
+          </p>
+          <p className="mt-4 text-sm leading-6 text-stone-600">
+            Supabase SQL Editor에서 프로젝트의 schema.sql을 실행했는지,
+            galleries/theme_rooms/artworks 테이블과 artwork-media Storage
+            bucket이 있는지 확인해야 합니다.
+          </p>
+        </section>
+      </main>
+    </>
   );
 }
 

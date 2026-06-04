@@ -100,7 +100,9 @@ export async function signUp(formData: FormData) {
     redirect("/dashboard");
   }
 
-  const supabase = await supabaseActionClient((message) => `/signup?error=${encodeURIComponent(message)}`);
+  const supabase = await supabaseActionClient(
+    (message) => `/signup?error=${encodeURIComponent(message)}`,
+  );
   const email = authEmail(identifier);
   const authPasswordValue = authPassword(password);
 
@@ -147,7 +149,12 @@ export async function signUp(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
   if (user) {
-    await ensureGallery(supabase, user);
+    try {
+      await ensureGallery(supabase, user);
+    } catch (error) {
+      const message = readableError(error, "미술관 생성에 실패했습니다.");
+      redirect(`/signup?error=${encodeURIComponent(message)}`);
+    }
   }
 
   redirect("/dashboard");
@@ -170,7 +177,9 @@ export async function signIn(formData: FormData) {
     redirect("/dashboard");
   }
 
-  const supabase = await supabaseActionClient((message) => `/login?error=${encodeURIComponent(message)}`);
+  const supabase = await supabaseActionClient(
+    (message) => `/login?error=${encodeURIComponent(message)}`,
+  );
   const { error } = await supabase.auth.signInWithPassword({
     email,
     password: authPasswordValue,
@@ -189,7 +198,9 @@ export async function signOut() {
     redirect("/");
   }
 
-  const supabase = await supabaseActionClient((message) => `/?error=${encodeURIComponent(message)}`);
+  const supabase = await supabaseActionClient(
+    (message) => `/?error=${encodeURIComponent(message)}`,
+  );
   await supabase.auth.signOut();
   redirect("/");
 }
@@ -215,7 +226,16 @@ export async function updateGallery(formData: FormData) {
 
   if (!user) redirect("/login");
 
-  const gallery = await ensureGallery(supabase, user);
+  let gallery;
+  try {
+    gallery = await ensureGallery(supabase, user);
+  } catch (error) {
+    redirect(
+      dashboardErrorUrl(
+        readableError(error, "미술관 정보를 불러오지 못했습니다."),
+      ),
+    );
+  }
   const { error } = await supabase
     .from("galleries")
     .update({
@@ -254,7 +274,16 @@ export async function createThemeRoom(formData: FormData) {
 
   if (!user) redirect("/login");
 
-  const gallery = await ensureGallery(supabase, user);
+  let gallery;
+  try {
+    gallery = await ensureGallery(supabase, user);
+  } catch (error) {
+    redirect(
+      dashboardErrorUrl(
+        readableError(error, "미술관 정보를 불러오지 못했습니다."),
+      ),
+    );
+  }
   const { error } = await supabase.from("theme_rooms").insert({
     gallery_id: gallery.id,
     user_id: user.id,
