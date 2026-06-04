@@ -135,11 +135,9 @@ async function ensureArtworkBucket() {
     return admin;
   }
 
-  if (!bucket.public) {
-    const { error } = await admin.storage.updateBucket("artwork-media", options);
-    if (error) {
-      throw error;
-    }
+  const { error } = await admin.storage.updateBucket("artwork-media", options);
+  if (error) {
+    throw error;
   }
 
   return admin;

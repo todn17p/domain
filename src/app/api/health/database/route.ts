@@ -66,6 +66,8 @@ export async function GET() {
       ok: !bucketError && Boolean(artworkBucket),
       hasArtworkMediaBucket: Boolean(artworkBucket),
       artworkMediaPublic: artworkBucket?.public ?? null,
+      artworkMediaFileSizeLimit: artworkBucket?.file_size_limit ?? null,
+      artworkMediaAllowedMimeTypes: artworkBucket?.allowed_mime_types ?? null,
       error: bucketError?.message ?? null,
     },
     note: "No secret keys are returned. This checks schema and storage readiness only.",
