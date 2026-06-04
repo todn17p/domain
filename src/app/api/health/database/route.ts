@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { getSupabaseConfigStatus } from "@/lib/supabase/config";
-import { ARTWORK_BUCKET, ARTWORK_MAX_FILE_SIZE } from "@/lib/storage";
+import {
+  ARTWORK_BUCKET,
+  ARTWORK_BUCKET_LIMIT_CANDIDATES,
+  ARTWORK_MAX_FILE_SIZE,
+} from "@/lib/storage";
 
 const tables = ["profiles", "galleries", "theme_rooms", "artworks"] as const;
 
@@ -68,6 +72,7 @@ export async function GET() {
       artworkMediaPublic: artworkBucket?.public ?? null,
       artworkMediaFileSizeLimit: artworkBucket?.file_size_limit ?? null,
       expectedFileSizeLimit: ARTWORK_MAX_FILE_SIZE,
+      fallbackFileSizeLimits: ARTWORK_BUCKET_LIMIT_CANDIDATES,
       artworkMediaAllowedMimeTypes: artworkBucket?.allowed_mime_types ?? null,
       error: bucketError?.message ?? null,
       statusCode:
