@@ -42,6 +42,26 @@ function dashboardErrorUrl(error: string) {
   return `/dashboard?error=${encodeURIComponent(error)}`;
 }
 
+function readableError(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
+async function supabaseActionClient(errorUrl: (message: string) => string) {
+  try {
+    return await createSupabaseServerClient();
+  } catch (error) {
+    redirect(errorUrl(readableError(error, "Supabase 설정을 확인해주세요.")));
+  }
+}
+
+function supabaseAdminActionClient(errorUrl: (message: string) => string) {
+  try {
+    return createSupabaseAdminClient();
+  } catch (error) {
+    redirect(errorUrl(readableError(error, "Supabase 관리자 설정을 확인해주세요.")));
+  }
+}
+
 function authEmail(identifier: string) {
   const normalized = identifier.trim().toLowerCase();
   if (normalized.includes("@")) {
@@ -72,11 +92,11 @@ export async function signUp(formData: FormData) {
     redirect("/dashboard");
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = await supabaseActionClient((message) => `/signup?error=${encodeURIComponent(message)}`);
   const email = authEmail(identifier);
 
   if (supabaseServiceRoleKey) {
-    const admin = createSupabaseAdminClient();
+    const admin = supabaseAdminActionClient((message) => `/signup?error=${encodeURIComponent(message)}`);
     const { error: createError } = await admin.auth.admin.createUser({
       email,
       password,
@@ -140,7 +160,7 @@ export async function signIn(formData: FormData) {
     redirect("/dashboard");
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = await supabaseActionClient((message) => `/login?error=${encodeURIComponent(message)}`);
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
@@ -156,7 +176,7 @@ export async function signOut() {
     redirect("/");
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = await supabaseActionClient((message) => `/?error=${encodeURIComponent(message)}`);
   await supabase.auth.signOut();
   redirect("/");
 }
@@ -175,14 +195,14 @@ export async function updateGallery(formData: FormData) {
     return;
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = await supabaseActionClient(dashboardErrorUrl);
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
 
-    const gallery = await ensureGallery(supabase, user);
+  const gallery = await ensureGallery(supabase, user);
   const { error } = await supabase
     .from("galleries")
     .update({
@@ -214,7 +234,7 @@ export async function createThemeRoom(formData: FormData) {
     return;
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = await supabaseActionClient(dashboardErrorUrl);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -246,7 +266,7 @@ export async function deleteThemeRoom(formData: FormData) {
     return;
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = await supabaseActionClient(dashboardErrorUrl);
   const roomId = value(formData, "roomId");
   const {
     data: { user },
@@ -325,14 +345,16 @@ export async function createArtwork(formData: FormData) {
     redirect(`/dashboard/rooms/${localRoom.room.id}`);
   }
 
-  const supabase = await createSupabaseServerClient();
+  const roomId = value(formData, "theme_room_id");
+  const supabase = await supabaseActionClient((message) =>
+    artworkErrorUrl(roomId, message),
+  );
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
 
-  const roomId = value(formData, "theme_room_id");
   const mediaType = value(formData, "media_type");
   const file = formData.get("file");
 
@@ -401,7 +423,7 @@ export async function deleteArtwork(formData: FormData) {
     return;
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = await supabaseActionClient(dashboardErrorUrl);
   const artworkId = value(formData, "artworkId");
   const {
     data: { user },
@@ -447,7 +469,9 @@ export async function adminDeleteUser(formData: FormData) {
     return;
   }
 
-  const supabase = createSupabaseAdminClient();
+  const supabase = supabaseAdminActionClient(
+    (message) => `/admin?error=${encodeURIComponent(message)}`,
+  );
 
   await supabase.from("artworks").delete().eq("user_id", userId);
   await supabase.from("theme_rooms").delete().eq("user_id", userId);
