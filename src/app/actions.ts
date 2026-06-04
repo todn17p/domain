@@ -75,6 +75,14 @@ function supabaseAdminActionClient(errorUrl: (message: string) => string) {
   }
 }
 
+function supabaseMutationClient() {
+  if (supabaseServiceRoleKey) {
+    return createSupabaseAdminClient();
+  }
+
+  throw new Error("SUPABASE_SERVICE_ROLE_KEY 환경변수가 필요합니다.");
+}
+
 function authEmail(identifier: string) {
   const normalized = identifier.trim().toLowerCase();
   if (normalized.includes("@")) {
@@ -96,6 +104,45 @@ function authPassword(password: string) {
 async function fileToDataUrl(file: File) {
   const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
   return `data:${file.type || "application/octet-stream"};base64,${base64}`;
+}
+
+async function ensureArtworkBucket() {
+  const admin = createSupabaseAdminClient();
+  const { data: buckets, error: listError } = await admin.storage.listBuckets();
+  if (listError) {
+    throw listError;
+  }
+
+  const bucket = buckets.find((item) => item.name === "artwork-media");
+  const options = {
+    public: true,
+    fileSizeLimit: 100 * 1024 * 1024,
+    allowedMimeTypes: [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "video/mp4",
+      "video/quicktime",
+      "video/webm",
+    ],
+  };
+
+  if (!bucket) {
+    const { error } = await admin.storage.createBucket("artwork-media", options);
+    if (error) {
+      throw error;
+    }
+    return admin;
+  }
+
+  if (!bucket.public) {
+    const { error } = await admin.storage.updateBucket("artwork-media", options);
+    if (error) {
+      throw error;
+    }
+  }
+
+  return admin;
 }
 
 export async function signUp(formData: FormData) {
@@ -249,7 +296,9 @@ export async function updateGallery(formData: FormData) {
       ),
     );
   }
-  const { error } = await supabase
+
+  const mutationClient = supabaseMutationClient();
+  const { error } = await mutationClient
     .from("galleries")
     .update({
       name: value(formData, "name"),
@@ -297,7 +346,9 @@ export async function createThemeRoom(formData: FormData) {
       ),
     );
   }
-  const { error } = await supabase.from("theme_rooms").insert({
+
+  const mutationClient = supabaseMutationClient();
+  const { error } = await mutationClient.from("theme_rooms").insert({
     gallery_id: gallery.id,
     user_id: user.id,
     title: value(formData, "title"),
@@ -329,7 +380,8 @@ export async function deleteThemeRoom(formData: FormData) {
 
   if (!user) redirect("/login");
 
-  const { error } = await supabase
+  const mutationClient = supabaseMutationClient();
+  const { error } = await mutationClient
     .from("theme_rooms")
     .delete()
     .eq("id", roomId)
@@ -432,7 +484,15 @@ export async function createArtwork(formData: FormData) {
 
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "upload";
   const path = `${user.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-  const { error: uploadError } = await supabase.storage
+
+  let mutationClient;
+  try {
+    mutationClient = await ensureArtworkBucket();
+  } catch (error) {
+    redirect(artworkErrorUrl(roomId, readableError(error, "bucket-failed")));
+  }
+
+  const { error: uploadError } = await mutationClient.storage
     .from("artwork-media")
     .upload(path, file, {
       cacheControl: "3600",
@@ -445,11 +505,11 @@ export async function createArtwork(formData: FormData) {
     );
   }
 
-  const { data: publicUrl } = supabase.storage
+  const { data: publicUrl } = mutationClient.storage
     .from("artwork-media")
     .getPublicUrl(path);
 
-  const { error: artworkError } = await supabase.from("artworks").insert({
+  const { error: artworkError } = await mutationClient.from("artworks").insert({
     theme_room_id: room.id,
     gallery_id: room.gallery_id,
     user_id: user.id,
@@ -486,7 +546,8 @@ export async function deleteArtwork(formData: FormData) {
 
   if (!user) redirect("/login");
 
-  await supabase
+  const mutationClient = supabaseMutationClient();
+  await mutationClient
     .from("artworks")
     .delete()
     .eq("id", artworkId)

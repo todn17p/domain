@@ -3,8 +3,11 @@ import { notFound } from "next/navigation";
 import { ArtworkWall } from "@/components/artwork-wall";
 import { GalleryHeader } from "@/components/gallery-shell";
 import { getLocalVisit } from "@/lib/local-db";
-import { hasSupabaseEnv } from "@/lib/supabase/config";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { hasSupabaseEnv, supabaseServiceRoleKey } from "@/lib/supabase/config";
+import {
+  createSupabaseAdminClient,
+  createSupabaseServerClient,
+} from "@/lib/supabase/server";
 import type { Artwork, Gallery, ThemeRoom } from "@/lib/types";
 
 export default async function VisitGalleryPage({
@@ -31,11 +34,14 @@ export default async function VisitGalleryPage({
     );
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseServiceRoleKey
+    ? createSupabaseAdminClient()
+    : await createSupabaseServerClient();
+  const normalizedCode = decodeURIComponent(code).trim().toUpperCase();
   const { data: gallery } = await supabase
     .from("galleries")
     .select("*")
-    .eq("gallery_code", code.toUpperCase())
+    .eq("gallery_code", normalizedCode)
     .single();
 
   if (!gallery) notFound();
