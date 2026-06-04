@@ -486,6 +486,7 @@ export async function createArtwork(formData: FormData) {
 
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "upload";
   const path = `${user.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+  const fileBuffer = Buffer.from(await file.arrayBuffer());
 
   let mutationClient;
   try {
@@ -496,9 +497,9 @@ export async function createArtwork(formData: FormData) {
 
   const { error: uploadError } = await mutationClient.storage
     .from("artwork-media")
-    .upload(path, file, {
+    .upload(path, fileBuffer, {
       cacheControl: "3600",
-      contentType: file.type,
+      contentType: file.type || "application/octet-stream",
     });
 
   if (uploadError) {
